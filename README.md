@@ -54,6 +54,95 @@ shell.
 The installer only ever creates symlinks, and it is idempotent — a second run
 reports `already linked` and changes nothing.
 
+## Deploy
+
+The full sequence for a machine that already has dotfiles. Every step is
+reversible; the point of no return does not exist, because nothing is deleted.
+
+### 1. Check the prerequisites
+
+```sh
+tmux -V          # 3.3 or newer
+zsh --version    # 5.8 or newer
+echo "$SHELL"    # should end in /zsh
+```
+
+If `$SHELL` is not zsh, `chsh -s "$(command -v zsh)"` and log out and back in.
+The installer does not change your login shell: that is a system-level change
+with a bad failure mode, so it stays your decision.
+
+### 2. Preview
+
+```sh
+./install.sh --dry-run
+```
+
+Read the output before continuing. Lines beginning `warn` are the ones that
+matter — each names a file that will be moved aside, and the exact backup path
+it will move to. Note those paths down; they are your rollback.
+
+### 3. Install
+
+```sh
+./install.sh
+```
+
+Four symlinks are created (`~/.tmux.conf`, `~/.zshenv`, `~/.zshrc`,
+`~/.config/starship.toml`), plus `~/.local/share/steves-cli-setup` pointing at
+the clone. The vendored plugins are fetched at their pinned commits. Do not
+move or rename the clone afterwards: the symlinks and the plugin paths both
+resolve through it.
+
+### 4. Set the terminal font
+
+Set your terminal emulator's font to **JetBrainsMono Nerd Font**. In XFCE
+Terminal that is Edit → Preferences → Appearance → Font. Skipping this leaves
+the status bar and prompt full of replacement boxes; nothing is broken, the
+glyphs are simply not in the font.
+
+### 5. Restart both
+
+```sh
+exec zsh                            # new shell, new config
+tmux kill-server                    # only if a server is already running
+tmux
+```
+
+`tmux source-file ~/.tmux.conf` reloads options and bindings, but it cannot
+undo settings the old config applied, and continuum only arms its timer at
+server start. On the first deploy, kill the server.
+
+### 6. Verify
+
+```sh
+tmux show -g prefix                 # prefix C-a
+tmux show -g renumber-windows       # renumber-windows on
+tmux show -g @continuum-restore     # @continuum-restore on
+ls ~/.local/share/tmux/resurrect/   # a new save appears within 15 minutes
+```
+
+Press `prefix + C-s` to force a save immediately rather than waiting. Continuum
+disables its own auto-save whenever a second tmux server is running, so run
+this check with exactly one server up.
+
+### 7. Reclaim your old settings
+
+Your previous `~/.zshrc` is intact at the backup path from step 2. Move
+anything worth keeping into `~/.zshrc.local`, which this repo sources and never
+overwrites — do not paste it back into the tracked `zsh/zshrc`.
+
+### Rolling back
+
+```sh
+./install.sh --uninstall
+mv ~/.zshrc.bak.<timestamp> ~/.zshrc
+mv ~/.tmux.conf.bak.<timestamp> ~/.tmux.conf
+```
+
+Uninstall removes a symlink only if it points into this repository, so a
+config you installed some other way in the meantime survives. Backups and the
+font are never touched — delete them yourself once you are sure.
+
 ### What it will not do to your files
 
 Anything already at a target path is **moved to `<path>.bak.<timestamp>`**,
