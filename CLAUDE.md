@@ -64,3 +64,8 @@ and Wayland paths must not be broken, but the above is what gets tested.
 - **`status-interval` bounds continuum's save granularity.** The save check only
   runs when the status bar redraws, so `status-interval 0` would disable
   auto-save no matter what `@continuum-save-interval` says.
+- **`compinit` must be called with `-i`.** A single group-writable directory in
+  `fpath` otherwise makes it block on a yes/no prompt before the first prompt is
+  drawn. Homebrew on macOS and most CI runners both produce exactly that. `-i`
+  drops the offending directories; do not "fix" this with `-u`, which loads
+  their completion functions regardless and is the unsafe option.

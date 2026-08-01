@@ -44,8 +44,14 @@ mkdir -p "${_scs_zcompdump:h}"
 autoload -Uz compinit
 # compinit's security audit of every fpath directory is the single slowest part
 # of zsh startup. Run it in full once a day and skip it with -C otherwise.
+#
+# -i is not optional. Without it, one group-writable completion directory makes
+# compinit stop and ask a yes/no question before the first prompt appears --
+# which is what Homebrew on macOS, and most CI runners, actually produce. -i
+# drops those directories instead; -u, the other way to silence the prompt,
+# would load their completion functions anyway, which is the unsafe answer.
 if [[ -n ${_scs_zcompdump}(#qN.mh+24) ]]; then
-  compinit -d "$_scs_zcompdump"
+  compinit -i -d "$_scs_zcompdump"
 else
   compinit -C -d "$_scs_zcompdump"
 fi
