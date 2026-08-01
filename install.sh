@@ -29,6 +29,7 @@ with_font=1
 # target:source, relative to the repository root.
 LINKS=(
   "$HOME/.tmux.conf:tmux/tmux.conf"
+  "$HOME/.zshenv:zsh/zshenv"
   "$HOME/.zshrc:zsh/zshrc"
   "$XDG_CONFIG_HOME/starship.toml:starship/starship.toml"
 )

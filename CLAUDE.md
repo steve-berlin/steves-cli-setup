@@ -22,6 +22,7 @@ symlink; the repo is the source of truth for every config file.
 | Path                    | Purpose                                    |
 | ----------------------- | ------------------------------------------ |
 | `tmux/tmux.conf`        | tmux configuration (symlinked to `~/.tmux.conf`) |
+| `zsh/zshenv`            | sourced before all else (symlinked to `~/.zshenv`) |
 | `zsh/zshrc`             | zsh configuration (symlinked to `~/.zshrc`) |
 | `starship/starship.toml`| prompt (symlinked to `~/.config/starship.toml`) |
 | `vendor/`               | git submodules — third-party code only     |
@@ -69,3 +70,13 @@ and Wayland paths must not be broken, but the above is what gets tested.
   drawn. Homebrew on macOS and most CI runners both produce exactly that. `-i`
   drops the offending directories; do not "fix" this with `-u`, which loads
   their completion functions regardless and is the unsafe option.
+- **`zsh/zshenv` exists solely to set `skip_global_compinit=1`.** Debian and
+  Ubuntu's `/etc/zsh/zshrc` runs its own unguarded `compinit` before `~/.zshrc`
+  is read, which both reintroduces that blocking prompt and pays for the
+  slowest part of zsh startup twice. The opt-out is only read if it is already
+  set by then, so it cannot live in `zshrc`. Do not merge this file into
+  `zshrc`.
+- **Test the empty-dump case, not just the stale one.** `${dump}(#qN.mh+24)`
+  matches nothing when the file is absent, so a staleness-only test sends a
+  brand-new machine down the `compinit -C` path — no audit and no dump to
+  load, which yields a shell with no completions at all.

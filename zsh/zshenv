@@ -1,0 +1,16 @@
+# steves-cli-setup — zsh environment
+# https://github.com/steve-berlin/steves-cli-setup
+#
+# Read before every other startup file, which is the only reason this file
+# exists.
+#
+# Debian and Ubuntu ship an /etc/zsh/zshrc that runs its own `compinit` before
+# ~/.zshrc is read. That call passes no -i, so a single group-writable
+# directory in fpath makes it stop and ask a yes/no question before the shell
+# is usable; it also writes a dump that zshrc then immediately supersedes,
+# paying for the slowest part of zsh startup twice.
+#
+# The opt-out is only honoured if it is already set when /etc/zsh/zshrc runs,
+# so it cannot live in ~/.zshrc. Completion is still initialised -- properly,
+# with -i and a cached dump -- by this repository's zshrc.
+skip_global_compinit=1

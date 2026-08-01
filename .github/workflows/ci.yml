@@ -74,7 +74,7 @@ jobs:
       - name: Uninstall is clean
         run: |
           ./install.sh --uninstall
-          for f in "$HOME/.tmux.conf" "$HOME/.zshrc" "$HOME/.config/starship.toml"; do
+          for f in "$HOME/.tmux.conf" "$HOME/.zshenv" "$HOME/.zshrc" "$HOME/.config/starship.toml"; do
             if [[ -L "$f" ]]; then echo "$f survived uninstall" >&2; exit 1; fi
           done
         shell: bash
