@@ -1,0 +1,74 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tmux zsh shellcheck fzf
+          tmux -V && zsh --version
+
+      - name: Lint the installer
+        run: shellcheck install.sh
+
+      - name: Check zsh syntax
+        run: zsh -n zsh/zshrc
+
+      # Exercises the real install path rather than a hand-built fixture, which
+      # is what catches a broken symlink layout.
+      - name: Install
+        run: ./install.sh --no-font
+
+      # A second run must find everything already linked. Creating a backup is
+      # the unambiguous sign that it moved a file it had itself just written.
+      - name: Install is idempotent
+        run: |
+          ./install.sh --no-font | tee second-run.log
+          if grep -q 'moving it to' second-run.log; then
+            echo "second run backed up a file it created; installer is not idempotent" >&2
+            exit 1
+          fi
+          grep -q 'already linked' second-run.log
+
+      - name: tmux configuration loads
+        run: |
+          tmux -f tmux/tmux.conf -L ci new-session -d
+          tmux -L ci show -g prefix | grep -q 'C-a'
+          tmux -L ci show -g renumber-windows | grep -q 'on'
+          tmux -L ci list-keys -T copy-mode-vi | grep -q 'copy-pipe-and-cancel\|copy-selection-and-cancel'
+          tmux -L ci kill-server
+
+      - name: zsh starts without errors
+        run: |
+          # Any output on stderr from a login-less interactive shell is a fault:
+          # every path in zshrc is meant to be guarded on the tool existing.
+          err="$(zsh -i -c exit 2>&1 >/dev/null)"
+          if [[ -n "$err" ]]; then
+            echo "zsh startup wrote to stderr:" >&2
+            echo "$err" >&2
+            exit 1
+          fi
+        shell: bash
+
+      - name: Uninstall is clean
+        run: |
+          ./install.sh --uninstall
+          for f in "$HOME/.tmux.conf" "$HOME/.zshrc" "$HOME/.config/starship.toml"; do
+            if [[ -L "$f" ]]; then echo "$f survived uninstall" >&2; exit 1; fi
+          done
+        shell: bash
