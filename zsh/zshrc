@@ -81,6 +81,12 @@ bindkey -e
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
 bindkey '^[[3~'   delete-char
+
+# Ctrl+Delete. Leaving this unbound does not merely do nothing: `^[[3` is a
+# prefix of the bound `^[[3~`, so zsh keeps reading, finds no match once the
+# `;` arrives, and lets the trailing characters fall through to self-insert.
+# That is where a literal `5~` on the command line comes from.
+bindkey "${terminfo[kDC5]:-^[[3;5~}" kill-word
 bindkey '^[[H'    beginning-of-line
 bindkey '^[[F'    end-of-line
 bindkey "${terminfo[khome]:-^[[H}" beginning-of-line
