@@ -26,8 +26,8 @@ the configuration:
 | tmux         | 3.3      | Developed against 3.5a                   |
 | zsh          | 5.8      | Developed against 5.9                    |
 | git          | 2.30     | Submodules are fetched during install    |
-| starship     | 1.20     | Installed by `install.sh` if missing     |
-| A Nerd Font  | v3       | Installed by `install.sh` if missing     |
+| starship     | 1.20     | Install it yourself, or pass `--with-starship` |
+| A Nerd Font  | v3       | Downloaded by `install.sh` unless `--no-font` |
 
 Optional, auto-detected and used when present: `fzf`, `eza`, `bat`, `fd`,
 `ripgrep`, `zoxide`, `xclip` / `wl-clipboard`.
@@ -35,23 +35,54 @@ Optional, auto-detected and used when present: `fzf`, `eza`, `bat`, `fd`,
 ## Install
 
 ```sh
-git clone --recurse-submodules https://github.com/steve-berlin/steves-cli-setup.git
+git clone https://github.com/steve-berlin/steves-cli-setup.git
 cd steves-cli-setup
+./install.sh --dry-run   # see exactly what would change
 ./install.sh
 ```
 
-`install.sh` is idempotent, supports `--dry-run` and `--uninstall`, and only
-ever creates symlinks — your own files are backed up, never overwritten.
+Then set your terminal's font to **JetBrainsMono Nerd Font** and start a new
+shell.
+
+| Flag              | Effect                                            |
+| ----------------- | ------------------------------------------------- |
+| `--dry-run`       | Print every change as a shell command, apply none  |
+| `--uninstall`     | Remove only the symlinks this installer created    |
+| `--with-starship` | Also run starship's official installer             |
+| `--no-font`       | Skip the Nerd Font download                        |
+
+The installer only ever creates symlinks, and it is idempotent — a second run
+reports `already linked` and changes nothing.
+
+### What it will not do to your files
+
+Anything already at a target path is **moved to `<path>.bak.<timestamp>`**,
+whether it is a regular file or a symlink belonging to another dotfile setup.
+Nothing is overwritten and nothing is deleted, with one exception: a dangling
+symlink is removed, because there is nothing behind it to preserve.
+
+`--uninstall` removes a link only if it points into this repository. Foreign
+links, backups and the font are left alone.
+
+Starship is deliberately *not* installed automatically. Piping a remote script
+into a shell should be an explicit decision, so `--with-starship` exists and the
+default merely warns.
+
+### Local overrides
+
+`~/.tmux.conf.local` and `~/.zshrc.local` are sourced when present and are never
+written by the installer. Put machine-specific settings there rather than
+editing the tracked files.
 
 ## Roadmap
 
 - [x] Repository skeleton
-- [ ] tmux core configuration
-- [ ] tmux status bar and theme
-- [ ] Session persistence (resurrect + continuum) and pane dimming
-- [ ] Starship prompt
-- [ ] zsh configuration
-- [ ] `install.sh`
+- [x] tmux core configuration
+- [x] tmux status bar and theme
+- [x] Session persistence (resurrect + continuum) and pane dimming
+- [x] Starship prompt
+- [x] zsh configuration
+- [x] `install.sh`
 - [ ] CI and first release
 
 ## Licence
