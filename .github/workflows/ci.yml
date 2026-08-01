@@ -55,12 +55,18 @@ jobs:
 
       - name: zsh starts without errors
         run: |
-          # Any output on stderr from a login-less interactive shell is a fault:
-          # every path in zshrc is meant to be guarded on the tool existing.
-          err="$(zsh -i -c exit 2>&1 >/dev/null)"
-          if [[ -n "$err" ]]; then
-            echo "zsh startup wrote to stderr:" >&2
-            echo "$err" >&2
+          # Run under a pty. compinit refuses to initialise without a terminal,
+          # so a bare `zsh -i` on a runner fails for reasons that have nothing
+          # to do with this configuration.
+          #
+          # `script` merges stdout and stderr, which makes the assertion
+          # stricter rather than weaker: a correct startup is silent on both.
+          # Every optional tool in zshrc is guarded on the tool existing, so any
+          # output at all means a guard is missing.
+          out="$(script -qec 'zsh -i -c exit' /dev/null 2>&1)"
+          if [[ -n "${out//[$'\r\n']/}" ]]; then
+            echo "zsh startup was not silent:" >&2
+            echo "$out" >&2
             exit 1
           fi
         shell: bash
