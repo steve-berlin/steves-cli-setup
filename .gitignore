@@ -1,0 +1,8 @@
+# User-owned override files — the repo ships examples, never the real ones.
+*.local
+!*.local.example
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*~
