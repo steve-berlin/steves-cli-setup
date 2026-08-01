@@ -1,10 +1,10 @@
 # steves-cli-setup
 
+[![ci](https://github.com/steve-berlin/steves-cli-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/steve-berlin/steves-cli-setup/actions/workflows/ci.yml)
+
 A self-contained tmux + zsh environment: an Oh My Tmux!-style configuration with
 session persistence that actually works, paired with a fast, framework-free zsh
 and the [Starship](https://starship.rs) prompt.
-
-Status: **work in progress** — see [Roadmap](#roadmap).
 
 ## Why not Oh My Tmux!
 
@@ -74,16 +74,18 @@ default merely warns.
 written by the installer. Put machine-specific settings there rather than
 editing the tracked files.
 
-## Roadmap
+## What is included
 
-- [x] Repository skeleton
-- [x] tmux core configuration
-- [x] tmux status bar and theme
-- [x] Session persistence (resurrect + continuum) and pane dimming
-- [x] Starship prompt
-- [x] zsh configuration
-- [x] `install.sh`
-- [ ] CI and first release
+| File | What it does |
+| ---- | ------------ |
+| `tmux/tmux.conf` | `C-a` prefix (`C-b` still works), 1-indexed auto-renumbering windows, vi copy mode with system clipboard and OSC 52, fzf session/window popups on `prefix+s` / `prefix+w`, Nord status bar, native pane dimming, resurrect + continuum |
+| `zsh/zshrc` | history, completion, aliases and deferred plugins — 22 ms to prompt |
+| `zsh/zshenv` | opts out of Debian's redundant global `compinit` |
+| `starship/starship.toml` | two-line Nord prompt, ~9 ms |
+| `install.sh` | symlink deployment, idempotent, reversible |
+
+Ten files and 800 lines in total, with three runtime dependencies: tmux, zsh
+and git.
 
 ## Licence
 
