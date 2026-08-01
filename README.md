@@ -95,10 +95,11 @@ resolve through it.
 
 ### 4. Set the terminal font
 
-Set your terminal emulator's font to **JetBrainsMono Nerd Font**. In XFCE
-Terminal that is Edit → Preferences → Appearance → Font. Skipping this leaves
-the status bar and prompt full of replacement boxes; nothing is broken, the
-glyphs are simply not in the font.
+Set your terminal emulator's font to **JetBrainsMono Nerd Font**. Skipping this
+leaves the status bar and prompt full of replacement boxes; nothing is broken,
+the glyphs are simply not in the font. See
+[KDE Plasma and Alacritty](#kde-plasma-and-alacritty) below for the exact
+settings on the tested desktop.
 
 ### 5. Restart both
 
@@ -162,6 +163,75 @@ default merely warns.
 `~/.tmux.conf.local` and `~/.zshrc.local` are sourced when present and are never
 written by the installer. Put machine-specific settings there rather than
 editing the tracked files.
+
+## KDE Plasma and Alacritty
+
+The tested desktop is KDE Plasma on Wayland with Alacritty as the terminal.
+Nothing here is required — the configuration works on any terminal that
+reports RGB — but these are the settings that make it look and behave as
+intended, and the two Wayland-specific traps worth knowing about.
+
+### Alacritty
+
+Alacritty has no font picker; the configuration is a TOML file it reads on
+every save, so changes apply live to open windows. Create
+`~/.config/alacritty/alacritty.toml`:
+
+```toml
+[font]
+size = 11.0
+
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+style  = "Regular"
+
+[env]
+TERM = "alacritty"
+```
+
+The key names changed in Alacritty 0.13 (`[font.normal] family` used to be
+`font.normal.family` in YAML), and the file moved from `alacritty.yml` to
+`alacritty.toml`. Guides written before 2024 will not work as-is; check
+`alacritty --version` against anything you copy.
+
+Leave `TERM` as `alacritty` outside tmux. It is a real terminfo entry, shipped
+in Debian's `ncurses-term`, and downgrading it to `xterm-256color` costs you
+undercurl and styled underlines. Inside tmux the value is irrelevant — this
+config sets `default-terminal tmux-256color` and advertises the outer
+terminal's capabilities with `terminal-features`.
+
+### Konsole
+
+Konsole stores the font per profile, not globally: Settings → Edit Current
+Profile → Appearance → Font → Select. Setting it anywhere else changes nothing,
+and a fresh profile silently reverts to the default font.
+
+One real limitation: **Konsole does not support OSC 52**, and has not for many
+years. `set-clipboard on` in this configuration is therefore a no-op there, so
+copying out of a tmux session running over SSH will not reach your local
+clipboard. Local copies still work through the `xclip` / `wl-copy` bindings.
+Alacritty does support OSC 52 for copy by default, which is the main reason it
+is the tested terminal.
+
+### Wayland clipboard
+
+Install `wl-clipboard`, or copying will take a detour you did not ask for:
+
+```sh
+sudo apt install wl-clipboard
+```
+
+The copy binding prefers `wl-copy` when `WAYLAND_DISPLAY` is set, and falls
+back to `xclip` otherwise. Without `wl-clipboard` on a Wayland session, `xclip`
+is what runs, which means the copy goes into XWayland's X11 clipboard and only
+reaches native Wayland applications because KWin bridges the two. That bridge
+works, until XWayland is not running — then copying fails silently, with no
+error anywhere.
+
+`WAYLAND_DISPLAY` is read once, when the tmux **server** starts. A server
+started from a TTY or an X11 session keeps the X11 binding for its entire life,
+however many Wayland clients later attach to it. After installing
+`wl-clipboard`, run `tmux kill-server` so the check runs again.
 
 ## What is included
 

@@ -40,9 +40,10 @@ symlink; the repo is the source of truth for every config file.
 
 ## Target profile
 
-Primary target is Debian 13 (trixie), tmux 3.5a, zsh 5.9, X11, no mouse
-support wanted, JetBrainsMono Nerd Font. Keep everything else portable: macOS
-and Wayland paths must not be broken, but the above is what gets tested.
+Primary target is Debian 13 (trixie), tmux 3.5a, zsh 5.9, KDE Plasma on
+Wayland, Alacritty, no mouse support wanted, JetBrainsMono Nerd Font. Keep
+everything else portable: macOS, X11 and Konsole paths must not be broken, but
+the above is what gets tested.
 
 ## Non-obvious decisions
 
@@ -80,3 +81,12 @@ and Wayland paths must not be broken, but the above is what gets tested.
   matches nothing when the file is absent, so a staleness-only test sends a
   brand-new machine down the `compinit -C` path — no audit and no dump to
   load, which yields a shell with no completions at all.
+- **The clipboard `if-shell` checks run once, at server start.** `WAYLAND_DISPLAY`
+  is read from the environment the tmux *server* was forked with, so a server
+  started under X11 or from a TTY keeps the `xclip` binding for its whole life
+  no matter what later attaches to it. Changing clipboard tooling needs
+  `tmux kill-server`, not `source-file`.
+- **Konsole has no OSC 52 support.** `set-clipboard on` is a no-op there, so
+  copying out of a remote session cannot reach the local clipboard. This is why
+  Alacritty is the tested terminal; do not assume the OSC 52 path is available
+  everywhere on KDE.
