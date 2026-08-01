@@ -50,7 +50,11 @@ autoload -Uz compinit
 # which is what Homebrew on macOS, and most CI runners, actually produce. -i
 # drops those directories instead; -u, the other way to silence the prompt,
 # would load their completion functions anyway, which is the unsafe answer.
-if [[ -n ${_scs_zcompdump}(#qN.mh+24) ]]; then
+# The missing-file case must be tested separately: the (#qN.mh+24) qualifier
+# matches nothing when the file does not exist, so testing only for staleness
+# would send the very first shell down the -C branch, which skips the audit
+# without having a dump to load.
+if [[ ! -f "$_scs_zcompdump" || -n ${_scs_zcompdump}(#qN.mh+24) ]]; then
   compinit -i -d "$_scs_zcompdump"
 else
   compinit -C -d "$_scs_zcompdump"
