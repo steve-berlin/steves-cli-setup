@@ -1,0 +1,6 @@
+[submodule "vendor/tmux-resurrect"]
+	path = vendor/tmux-resurrect
+	url = https://github.com/tmux-plugins/tmux-resurrect.git
+[submodule "vendor/tmux-continuum"]
+	path = vendor/tmux-continuum
+	url = https://github.com/tmux-plugins/tmux-continuum.git

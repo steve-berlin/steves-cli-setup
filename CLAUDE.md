@@ -50,6 +50,17 @@ and Wayland paths must not be broken, but the above is what gets tested.
   do not reintroduce one.
 - **`escape-time` is 10ms, not 0.** Zero breaks some terminals over slow SSH
   links; 10 is enough to keep vim's ESC responsive.
-- **`tmux-continuum` must be the last plugin sourced.** It rewrites
-  `status-right` to store its save timestamp, so anything sourced after it that
-  also touches `status-right` will silently disable auto-save.
+- **`tmux-continuum` must be the last plugin sourced.** It prepends a
+  `#(continuum_save.sh)` interpolation to `status-right` and drives its timer
+  off the status bar redraw, so anything that replaces `status-right` after it
+  loads silently disables auto-save. This is why `~/.tmux.conf.local` is sourced
+  *before* the plugins rather than at the end of the file.
+- **Continuum disables its own auto-save when a second tmux server is running.**
+  `another_tmux_server_running` in `continuum.tmux` skips the status-right hook
+  entirely so that two servers cannot overwrite each other's saved state. A
+  config test run from inside an existing tmux session will therefore always
+  show a missing hook — that is the guard working, not a broken config. Verify
+  auto-save on a machine with exactly one tmux server.
+- **`status-interval` bounds continuum's save granularity.** The save check only
+  runs when the status bar redraws, so `status-interval 0` would disable
+  auto-save no matter what `@continuum-save-interval` says.
