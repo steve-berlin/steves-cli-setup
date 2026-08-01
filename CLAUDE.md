@@ -86,7 +86,10 @@ the above is what gets tested.
   started under X11 or from a TTY keeps the `xclip` binding for its whole life
   no matter what later attaches to it. Changing clipboard tooling needs
   `tmux kill-server`, not `source-file`.
-- **Konsole has no OSC 52 support.** `set-clipboard on` is a no-op there, so
-  copying out of a remote session cannot reach the local clipboard. This is why
-  Alacritty is the tested terminal; do not assume the OSC 52 path is available
-  everywhere on KDE.
+- **OSC 52 is not universal.** `set-clipboard on` is a silent no-op on
+  terminals that lack it (Konsole is the usual example), so the remote-copy
+  path cannot be assumed. Local copying does not depend on it.
+- **Document terminal capabilities, not terminals.** README gives the reader
+  three checks to run — RGB, Nerd Font glyphs, OSC 52 — instead of per-emulator
+  recipes, because the recipe list is unbounded and goes stale while the
+  capabilities do not. Resist adding a section per terminal.

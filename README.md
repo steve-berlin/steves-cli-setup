@@ -97,9 +97,9 @@ resolve through it.
 
 Set your terminal emulator's font to **JetBrainsMono Nerd Font**. Skipping this
 leaves the status bar and prompt full of replacement boxes; nothing is broken,
-the glyphs are simply not in the font. See
-[KDE Plasma and Alacritty](#kde-plasma-and-alacritty) below for the exact
-settings on the tested desktop.
+the glyphs are simply not in the font. [Your terminal](#your-terminal) below
+has a one-line check for this and for the two other things the configuration
+wants from a terminal.
 
 ### 5. Restart both
 
@@ -164,73 +164,92 @@ default merely warns.
 written by the installer. Put machine-specific settings there rather than
 editing the tracked files.
 
-## KDE Plasma and Alacritty
+## Your terminal
 
-The tested desktop is KDE Plasma on Wayland with Alacritty as the terminal.
-Nothing here is required — the configuration works on any terminal that
-reports RGB — but these are the settings that make it look and behave as
-intended, and the two Wayland-specific traps worth knowing about.
+This configuration asks three things of a terminal emulator. Rather than look
+yours up in a table of a hundred, run the three checks — each answers in a
+second, on any terminal, including one nobody has written a guide for.
 
-### Alacritty
-
-Alacritty has no font picker; the configuration is a TOML file it reads on
-every save, so changes apply live to open windows. Create
-`~/.config/alacritty/alacritty.toml`:
-
-```toml
-[font]
-size = 11.0
-
-[font.normal]
-family = "JetBrainsMono Nerd Font"
-style  = "Regular"
-
-[env]
-TERM = "alacritty"
-```
-
-The key names changed in Alacritty 0.13 (`[font.normal] family` used to be
-`font.normal.family` in YAML), and the file moved from `alacritty.yml` to
-`alacritty.toml`. Guides written before 2024 will not work as-is; check
-`alacritty --version` against anything you copy.
-
-Leave `TERM` as `alacritty` outside tmux. It is a real terminfo entry, shipped
-in Debian's `ncurses-term`, and downgrading it to `xterm-256color` costs you
-undercurl and styled underlines. Inside tmux the value is irrelevant — this
-config sets `default-terminal tmux-256color` and advertises the outer
-terminal's capabilities with `terminal-features`.
-
-### Konsole
-
-Konsole stores the font per profile, not globally: Settings → Edit Current
-Profile → Appearance → Font → Select. Setting it anywhere else changes nothing,
-and a fresh profile silently reverts to the default font.
-
-One real limitation: **Konsole does not support OSC 52**, and has not for many
-years. `set-clipboard on` in this configuration is therefore a no-op there, so
-copying out of a tmux session running over SSH will not reach your local
-clipboard. Local copies still work through the `xclip` / `wl-copy` bindings.
-Alacritty does support OSC 52 for copy by default, which is the main reason it
-is the tested terminal.
-
-### Wayland clipboard
-
-Install `wl-clipboard`, or copying will take a detour you did not ask for:
+### 1. 24-bit colour
 
 ```sh
-sudo apt install wl-clipboard
+printf '\033[38;2;255;100;0mIf this is orange, RGB works\033[0m\n'
 ```
 
-The copy binding prefers `wl-copy` when `WAYLAND_DISPLAY` is set, and falls
-back to `xclip` otherwise. Without `wl-clipboard` on a Wayland session, `xclip`
-is what runs, which means the copy goes into XWayland's X11 clipboard and only
-reaches native Wayland applications because KWin bridges the two. That bridge
-works, until XWayland is not running — then copying fails silently, with no
+Muddy red or plain white means the terminal is falling back to a 256-colour
+approximation. The palette will still be legible, just not the intended
+colours. Inside tmux, confirm the capability survived with `tmux info | grep
+RGB`.
+
+### 2. A Nerd Font
+
+```sh
+printf '    <- three glyphs, no boxes\n'
+```
+
+Boxes or question marks mean the font is not a Nerd Font, or the name is
+spelled differently than you think. The name is the part people get wrong, so
+take it from fontconfig rather than from a guide:
+
+```sh
+fc-list : family | tr , '\n' | grep -i 'nerd font' | sort -u
+```
+
+Use that string verbatim wherever your terminal wants a font family. Where
+that setting lives is the only genuinely per-terminal detail, and it is always
+one of two shapes: terminals with a GUI keep it under Preferences or Profile →
+Appearance, usually **per profile**, so a new profile silently reverts to the
+default; terminals configured by file want a family key in that file. As an
+example, `~/.config/alacritty/alacritty.toml`:
+
+```toml
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+```
+
+### 3. OSC 52, only if you copy from remote sessions
+
+```sh
+printf '\033]52;c;%s\a' "$(printf 'osc52 works' | base64)"
+```
+
+Then paste somewhere. If `osc52 works` appears, your terminal honours OSC 52,
+and a copy inside a tmux session on a remote machine will reach the clipboard
+of the machine in front of you. If nothing arrives, the terminal does not
+support it — Konsole is the common example, and has not for many years. Local
+copies are unaffected either way; they go through `xclip` or `wl-copy`.
+
+Some terminals ship OSC 52 disabled, or enabled for copy but not paste, since
+a program that can read your clipboard is a different risk from one that can
+write to it. Copy-only is all this configuration needs.
+
+### `TERM`
+
+Leave `TERM` at whatever your terminal sets. If that value has a real terminfo
+entry — check with `infocmp "$TERM" >/dev/null && echo ok`, and install
+`ncurses-term` if not — you get undercurl and styled underlines that
+`xterm-256color` would cost you. Inside tmux the outer value stops mattering:
+this config sets `default-terminal tmux-256color` and advertises the outer
+terminal's abilities through `terminal-features`.
+
+### Clipboard on Wayland
+
+Independent of the terminal — this one is a property of the session:
+
+```sh
+[ -n "$WAYLAND_DISPLAY" ] && command -v wl-copy >/dev/null || echo 'install wl-clipboard'
+```
+
+The copy binding prefers `wl-copy` when `WAYLAND_DISPLAY` is set and falls back
+to `xclip`. On a Wayland session without `wl-clipboard`, the fallback is what
+runs, so copies land in XWayland's X11 clipboard and reach native Wayland
+applications only because the compositor bridges the two. That bridge works —
+until XWayland is not running, at which point copying fails silently with no
 error anywhere.
 
 `WAYLAND_DISPLAY` is read once, when the tmux **server** starts. A server
-started from a TTY or an X11 session keeps the X11 binding for its entire life,
-however many Wayland clients later attach to it. After installing
+started from a TTY or an X11 session keeps the `xclip` binding for its entire
+life, however many Wayland clients later attach to it. After installing
 `wl-clipboard`, run `tmux kill-server` so the check runs again.
 
 ## What is included
