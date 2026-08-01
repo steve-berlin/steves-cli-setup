@@ -1,0 +1,85 @@
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Context on the first line, the prompt character alone on the second. Long
+# paths and git state then never push the cursor across the screen, and copied
+# commands come back without a prompt glued to the front.
+#
+# `$all` expands to every module not named above it, so language and tool
+# versions keep working without enumerating them here.
+format = """
+$username$hostname$directory$git_branch$git_state$git_status$all
+$character"""
+
+add_newline = true
+palette = 'nord'
+
+# Give up rather than stall the prompt. `scan_timeout` bounds the directory
+# scan that decides which language modules apply; `command_timeout` bounds any
+# module that shells out for a version string.
+scan_timeout = 10
+command_timeout = 500
+
+[palettes.nord]
+base = '#2e3440'
+surface = '#3b4252'
+raised = '#4c566a'
+text = '#d8dee9'
+bright = '#eceff4'
+teal = '#8fbcbb'
+cyan = '#88c0d0'
+blue = '#81a1c1'
+deep_blue = '#5e81ac'
+red = '#bf616a'
+orange = '#d08770'
+yellow = '#ebcb8b'
+green = '#a3be8c'
+purple = '#b48ead'
+
+[character]
+success_symbol = '[❯](cyan)'
+error_symbol = '[❯](red)'
+vimcmd_symbol = '[❮](green)'
+
+[directory]
+style = 'bold blue'
+truncation_length = 3
+truncate_to_repo = true
+read_only = ' 󰌾'
+read_only_style = 'red'
+
+# Both stay quiet locally and appear over SSH, which is the only time you need
+# reminding which machine is about to run the command.
+[username]
+style_user = 'yellow'
+style_root = 'bold red'
+format = '[$user]($style)[@](raised)'
+
+[hostname]
+ssh_only = true
+style = 'yellow'
+format = '[$hostname]($style) '
+
+[git_branch]
+symbol = ' '
+style = 'purple'
+format = 'on [$symbol$branch]($style) '
+
+[git_status]
+style = 'yellow'
+format = '([$all_status$ahead_behind]($style) )'
+
+[git_state]
+style = 'bold red'
+
+# Anything slower than two seconds is worth knowing about; anything faster is
+# noise.
+[cmd_duration]
+min_time = 2000
+style = 'yellow'
+format = 'took [$duration]($style) '
+
+# Reads and parses a manifest on every single prompt, in every project
+# directory, to show a version number that is already in the file you are
+# editing. The single worst default for prompt latency.
+[package]
+disabled = true
