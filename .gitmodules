@@ -4,3 +4,12 @@
 [submodule "vendor/tmux-continuum"]
 	path = vendor/tmux-continuum
 	url = https://github.com/tmux-plugins/tmux-continuum.git
+[submodule "vendor/zsh-defer"]
+	path = vendor/zsh-defer
+	url = https://github.com/romkatv/zsh-defer.git
+[submodule "vendor/zsh-autosuggestions"]
+	path = vendor/zsh-autosuggestions
+	url = https://github.com/zsh-users/zsh-autosuggestions.git
+[submodule "vendor/zsh-syntax-highlighting"]
+	path = vendor/zsh-syntax-highlighting
+	url = https://github.com/zsh-users/zsh-syntax-highlighting.git

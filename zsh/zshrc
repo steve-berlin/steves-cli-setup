@@ -1,0 +1,147 @@
+# steves-cli-setup — zsh configuration
+# https://github.com/steve-berlin/steves-cli-setup
+#
+# No framework. Third-party code is loaded from version-pinned git submodules,
+# and everything that is not needed to draw the first prompt is deferred until
+# after it appears.
+
+# Non-interactive shells get none of this: scripts start faster and cannot be
+# broken by an interactive plugin.
+[[ -o interactive ]] || return
+
+SCS_VENDOR="$HOME/.local/share/steves-cli-setup/vendor"
+
+# ── History ───────────────────────────────────────────────────────────────────
+
+HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/zsh/history"
+HISTSIZE=100000
+SAVEHIST=100000
+mkdir -p "${HISTFILE:h}"
+
+# Write history as it happens rather than at exit, so a crashed or killed
+# terminal does not take the session's history with it.
+setopt inc_append_history share_history extended_history
+setopt hist_ignore_all_dups hist_save_no_dups hist_reduce_blanks
+setopt hist_ignore_space          # a leading space keeps a command out of history
+setopt hist_verify                # expanded history lands on the line, not straight into execution
+
+# ── Shell behaviour ───────────────────────────────────────────────────────────
+
+setopt auto_cd auto_pushd pushd_ignore_dups pushd_silent
+setopt extended_glob
+setopt interactive_comments
+setopt no_beep
+
+# Frees C-s and C-q, which XON/XOFF flow control otherwise swallows. Nothing
+# has needed a software scroll lock since the physical terminal it was for.
+unsetopt flow_control
+
+# ── Completion ────────────────────────────────────────────────────────────────
+
+_scs_zcompdump="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+mkdir -p "${_scs_zcompdump:h}"
+
+autoload -Uz compinit
+# compinit's security audit of every fpath directory is the single slowest part
+# of zsh startup. Run it in full once a day and skip it with -C otherwise.
+if [[ -n ${_scs_zcompdump}(#qN.mh+24) ]]; then
+  compinit -d "$_scs_zcompdump"
+else
+  compinit -C -d "$_scs_zcompdump"
+fi
+
+# Byte-compile the dump so the next shell parses bytecode instead of source.
+if [[ ! ${_scs_zcompdump}.zwc -nt $_scs_zcompdump ]]; then
+  zcompile -R -- "${_scs_zcompdump}.zwc" "$_scs_zcompdump" 2>/dev/null
+fi
+
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompcache"
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+zstyle ':completion:*:descriptions' format '%F{yellow}%d%f'
+
+# ── Keys ──────────────────────────────────────────────────────────────────────
+
+bindkey -e
+
+# Terminals disagree about these, and zsh's terminfo entries are not always
+# right either, so bind both the xterm and the terminfo forms.
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+bindkey '^[[3~'   delete-char
+bindkey '^[[H'    beginning-of-line
+bindkey '^[[F'    end-of-line
+bindkey "${terminfo[khome]:-^[[H}" beginning-of-line
+bindkey "${terminfo[kend]:-^[[F}"  end-of-line
+
+# ── Aliases ───────────────────────────────────────────────────────────────────
+#
+# Only for tools that are actually installed, and never shadowing a standard
+# command with one that takes different arguments — scripts and muscle memory
+# both break when `find` silently becomes `fd`.
+
+if (( $+commands[eza] )); then
+  alias ls='eza --group-directories-first'
+  alias ll='eza -l --group-directories-first --git'
+  alias la='eza -la --group-directories-first --git'
+  alias lt='eza --tree --level=2'
+else
+  alias ls='ls --color=auto --group-directories-first'
+  alias ll='ls -lh'
+  alias la='ls -lah'
+fi
+
+alias grep='grep --color=auto'
+(( $+commands[bat] )) && alias bcat='bat --paging=never'
+
+# ── Prompt ────────────────────────────────────────────────────────────────────
+#
+# Synchronous on purpose: this is what draws the first prompt, so deferring it
+# would only show a bare `%` first and then repaint.
+if (( $+commands[starship] )); then
+  eval "$(starship init zsh)"
+fi
+
+# ── User overrides ────────────────────────────────────────────────────────────
+#
+# Before the deferred block, so that a local file can set plugin variables such
+# as ZSH_AUTOSUGGEST_STRATEGY and still have them read when the plugin loads.
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# ── Deferred ──────────────────────────────────────────────────────────────────
+#
+# Everything below loads after the first prompt is on screen. Order is
+# preserved, and zsh-syntax-highlighting stays last because it wraps every
+# widget defined before it and misses any defined after.
+
+if [[ -r "$SCS_VENDOR/zsh-defer/zsh-defer.plugin.zsh" ]]; then
+  source "$SCS_VENDOR/zsh-defer/zsh-defer.plugin.zsh"
+else
+  # Without zsh-defer, load the same things synchronously rather than not at all.
+  zsh-defer() { "$@"; }
+fi
+
+if (( $+commands[fzf] )); then
+  # fzf 0.48 onward ships its own integration; older packages install a script.
+  if fzf --zsh >/dev/null 2>&1; then
+    zsh-defer -c 'source <(fzf --zsh)'
+  elif [[ -r /usr/share/doc/fzf/examples/key-bindings.zsh ]]; then
+    zsh-defer source /usr/share/doc/fzf/examples/key-bindings.zsh
+    zsh-defer source /usr/share/doc/fzf/examples/completion.zsh
+  fi
+fi
+
+(( $+commands[zoxide] )) && zsh-defer -c 'eval "$(zoxide init zsh)"'
+
+# History only. The completion strategy runs the completion system on every
+# keystroke, which is the usual reason autosuggestions feels sluggish.
+ZSH_AUTOSUGGEST_STRATEGY=(history)
+ZSH_AUTOSUGGEST_MANUAL_REBIND=1
+zsh-defer source "$SCS_VENDOR/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+# Highlighting a very long line is O(length) on every keystroke; past this many
+# characters the latency is worse than the missing colour.
+ZSH_HIGHLIGHT_MAXLENGTH=512
+zsh-defer source "$SCS_VENDOR/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
