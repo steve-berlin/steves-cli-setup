@@ -13,3 +13,6 @@
 [submodule "vendor/zsh-syntax-highlighting"]
 	path = vendor/zsh-syntax-highlighting
 	url = https://github.com/zsh-users/zsh-syntax-highlighting.git
+[submodule "vendor/tmux-assistant-resurrect"]
+	path = vendor/tmux-assistant-resurrect
+	url = https://github.com/timvw/tmux-assistant-resurrect.git

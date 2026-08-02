@@ -16,6 +16,10 @@ the configuration:
 - **tmux-resurrect** and **tmux-continuum** are vendored as git submodules, so
   the exact commit is recorded in the repo. No network access at tmux start, no
   TPM, no drift.
+- **tmux-assistant-resurrect** rides on the same mechanism, restoring AI
+  assistant sessions with their conversation intact rather than as a bare
+  restarted binary. It is the one component that writes outside this repo — see
+  [Assistant session restore](#assistant-session-restore).
 - **Pane dimming** uses tmux's native `window-style` / `window-active-style`
   instead of an unmaintained plugin. Nothing to install and nothing to break.
 
@@ -125,6 +129,35 @@ ls ~/.local/share/tmux/resurrect/   # a new save appears within 15 minutes
 Press `prefix + C-s` to force a save immediately rather than waiting. Continuum
 disables its own auto-save whenever a second tmux server is running, so run
 this check with exactly one server up.
+
+## Assistant session restore
+
+`tmux-assistant-resurrect` extends resurrect to AI assistant panes. Resurrect
+alone would relaunch the bare binary and lose the conversation; this plugin
+records each assistant's session ID on save and resumes that exact session on
+restore. Claude Code, OpenCode, Codex CLI, Pi, Oh My Pi and Grok are supported.
+
+It hangs off `@resurrect-hook-post-save-all` and `@resurrect-hook-post-restore-all`,
+so `tmux/tmux.conf` sources it after resurrect and before continuum.
+
+Unlike everything else here, it writes outside the repo. Both effects run on
+every server start and are idempotent:
+
+| Path | What it does |
+| ---- | ------------ |
+| `~/.claude/settings.json` | Adds `SessionStart` / `SessionEnd` hooks. Needs `jq`; silently skipped without it. Existing keys are preserved. |
+| `~/.config/opencode/plugins/session-tracker.js` | Symlink to the tracker in `vendor/`. |
+
+Back that settings file up before the first run if it matters to you. To opt
+out entirely, comment out the `run-shell` line for the plugin in
+`tmux/tmux.conf` — resurrect and continuum keep working without it.
+
+Verify it loaded:
+
+```sh
+tmux show -g @resurrect-hook-post-save-all   # points into vendor/tmux-assistant-resurrect
+jq '.hooks.SessionStart' ~/.claude/settings.json
+```
 
 ### 7. Reclaim your old settings
 
@@ -256,7 +289,7 @@ life, however many Wayland clients later attach to it. After installing
 
 | File | What it does |
 | ---- | ------------ |
-| `tmux/tmux.conf` | `C-a` prefix (`C-b` still works), 1-indexed auto-renumbering windows, vi copy mode with system clipboard and OSC 52, fzf session/window popups on `prefix+s` / `prefix+w`, Nord status bar, native pane dimming, resurrect + continuum |
+| `tmux/tmux.conf` | `C-a` prefix (`C-b` still works), 1-indexed auto-renumbering windows, vi copy mode with system clipboard and OSC 52, fzf session/window popups on `prefix+s` / `prefix+w`, Nord status bar, native pane dimming, resurrect + continuum + assistant-resurrect |
 | `zsh/zshrc` | history, completion, aliases and deferred plugins — 22 ms to prompt |
 | `zsh/zshenv` | opts out of Debian's redundant global `compinit` |
 | `starship/starship.toml` | two-line Nord prompt, ~9 ms |
