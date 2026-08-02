@@ -165,6 +165,32 @@ Your previous `~/.zshrc` is intact at the backup path from step 2. Move
 anything worth keeping into `~/.zshrc.local`, which this repo sources and never
 overwrites — do not paste it back into the tracked `zsh/zshrc`.
 
+### Installers write through the symlink
+
+`~/.zshrc` is a symlink into this repository, so anything that appends to it is
+appending to the tracked `zsh/zshrc`. Tool installers do this routinely —
+`atuin`, `deno`, `rustup`, `nvm`, `bun` and Homebrew all offer to "add this to
+your shell config" — and the edit lands in your git working tree, not in a
+personal file. It is also how a config from another machine can end up
+overwriting this one wholesale.
+
+Nothing breaks immediately, which is what makes it easy to miss: the lines
+work, they are just in the wrong file, unversioned intent mixed into a
+publishable repo, and they are lost on the next `git checkout`. They also tend
+to duplicate what `zshrc` already does more carefully — an installer's bare
+`eval "$(atuin init zsh)"` overrides the flags you chose, and a second
+`compinit` throws away the cached dump.
+
+After installing anything that touches your shell:
+
+```sh
+git -C /path/to/steves-cli-setup status --short   # expect no changes to zsh/
+```
+
+If `zsh/zshrc` shows up modified, move the added lines into `~/.zshrc.local`
+and `git checkout -- zsh/zshrc`. Prefer the installer's opt-out where there is
+one (`rustup --no-modify-path`, `nvm` with `PROFILE=/dev/null`).
+
 ### Rolling back
 
 ```sh
