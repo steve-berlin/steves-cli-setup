@@ -315,7 +315,7 @@ life, however many Wayland clients later attach to it. After installing
 
 | File | What it does |
 | ---- | ------------ |
-| `tmux/tmux.conf` | `C-a` prefix (`C-b` still works), 1-indexed auto-renumbering windows, vi copy mode with system clipboard and OSC 52, fzf session/window popups on `prefix+s` / `prefix+w`, Nord status bar, native pane dimming, resurrect + continuum + assistant-resurrect |
+| `tmux/tmux.conf` | `C-a` prefix (`C-b` still works), 1-indexed auto-renumbering windows, vi copy mode with system clipboard and OSC 52, fzf session/window popups with preview on `prefix+s` / `prefix+w` and stock `choose-tree` on `prefix+S` / `prefix+W`, killing a session switches the client instead of detaching it, Nord status bar, native pane dimming, resurrect + continuum + assistant-resurrect |
 | `zsh/zshrc` | history, completion, aliases and deferred plugins — 22 ms to prompt |
 | `zsh/zshenv` | opts out of Debian's redundant global `compinit` |
 | `starship/starship.toml` | two-line Nord prompt, ~9 ms |

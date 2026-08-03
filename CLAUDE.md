@@ -81,6 +81,17 @@ the above is what gets tested.
   matches nothing when the file is absent, so a staleness-only test sends a
   brand-new machine down the `compinit -C` path — no audit and no dump to
   load, which yields a shell with no completions at all.
+- **The fzf popups are not a tmux mode.** `display-popup -E` runs a shell, so
+  none of `choose-tree`'s keys reach the server — no `:` command prompt, no `x`
+  to kill, no `f` filter. Anything the popup should do has to be bound on the
+  fzf side one key at a time (`--bind ctrl-x:...`), and a destructive bind needs
+  a `reload(...)` after it or the list keeps showing what was just killed. This
+  is why stock `choose-tree` stays reachable on `prefix + S` / `prefix + W`
+  rather than being replaced outright.
+- **`detach-on-destroy off` is what makes the popup's `ctrl-x` safe.** With the
+  default `on`, killing the session you are attached to drops the client back to
+  the shell instead of moving it to another session. tmux still detaches when no
+  other session is left, so the option changes the common case only.
 - **The clipboard `if-shell` checks run once, at server start.** `WAYLAND_DISPLAY`
   is read from the environment the tmux *server* was forked with, so a server
   started under X11 or from a TTY keeps the `xclip` binding for its whole life
